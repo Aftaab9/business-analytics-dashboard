@@ -15,9 +15,14 @@ export enum UserSpecificRole {
 }
 
 export interface User {
+  uid: string;
+  email: string;
+  displayName?: string;
   username: string;
   roleType: UserRoleType;
   specificRole?: UserSpecificRole; // This will be set if roleType is USER
+  createdAt?: string;
+  lastLoginAt?: string;
 }
 
 export interface Appointment {

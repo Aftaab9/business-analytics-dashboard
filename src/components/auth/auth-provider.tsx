@@ -5,6 +5,7 @@ import type { User, UserRoleType, UserSpecificRole } from '@/types';
 import { useRouter, usePathname } from 'next/navigation';
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { AuthService } from '@/lib/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -26,19 +27,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('insightFlowUser');
-      if (storedUser) {
-        const parsedUser: User = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setRoleType(parsedUser.roleType);
-        setSpecificRole(parsedUser.specificRole);
+    const unsubscribe = AuthService.onAuthStateChanged((user) => {
+      setUser(user);
+      if (user) {
+        setRoleType(user.roleType);
+        setSpecificRole(user.specificRole);
+      } else {
+        setRoleType(null);
+        setSpecificRole(null);
       }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem('insightFlowUser');
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -52,19 +53,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, isLoading, pathname, router]);
 
   const login = useCallback((userData: User) => {
-    localStorage.setItem('insightFlowUser', JSON.stringify(userData));
     setUser(userData);
     setRoleType(userData.roleType);
     setSpecificRole(userData.specificRole);
     router.push('/dashboard');
   }, [router]);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('insightFlowUser');
-    setUser(null);
-    setRoleType(null);
-    setSpecificRole(null);
-    router.push('/login');
+  const logout = useCallback(async () => {
+    try {
+      await AuthService.signOut();
+      setUser(null);
+      setRoleType(null);
+      setSpecificRole(null);
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still clear local state even if Firebase logout fails
+      setUser(null);
+      setRoleType(null);
+      setSpecificRole(null);
+      router.push('/login');
+    }
   }, [router]);
 
   if (isLoading && pathname !== '/login') {

@@ -3,11 +3,13 @@
 
 import { useState, useEffect } from 'react';
 import { LoginForm } from '@/components/auth/login-form';
+import { SignupForm } from '@/components/auth/signup-form';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function LoginPage() {
   const [isMounted, setIsMounted] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -50,7 +52,11 @@ export default function LoginPage() {
   // Render the actual login form only on the client after mounting
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
-      <LoginForm />
+      {isSignup ? (
+        <SignupForm onSwitchToLogin={() => setIsSignup(false)} />
+      ) : (
+        <LoginForm onSwitchToSignup={() => setIsSignup(true)} />
+      )}
     </main>
   );
 }
